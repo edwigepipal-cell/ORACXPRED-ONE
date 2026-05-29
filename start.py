@@ -4,7 +4,6 @@ Simple startup script for Render.
 """
 
 import os
-import site
 import subprocess
 import sys
 import traceback
@@ -12,42 +11,79 @@ from pathlib import Path
 
 
 def _bootstrap_paths():
-    """Ensure the project and user site-packages are importable."""
+    """Ensure the project directory is importable."""
     base_dir = Path(__file__).resolve().parent
     sys.path.insert(0, str(base_dir))
 
-    user_site = site.getusersitepackages()
-    if user_site and user_site not in sys.path:
-        site.addsitedir(user_site)
+
+def _venv_candidates():
+    base_dir = Path(__file__).resolve().parent
+    return [
+        base_dir / ".venv" / "bin" / "python",
+        base_dir / ".runtime_venv" / "bin" / "python",
+    ]
 
 
-def _install_missing_dependencies():
-    """Install requirements into the user site when the runtime misses Flask."""
-    try:
-        import flask  # noqa: F401
-        return
-    except Exception:
-        pass
+def _current_python_is_venv_python():
+    current_python = Path(sys.executable).resolve()
+    return any(current_python == candidate.resolve() for candidate in _venv_candidates() if candidate.exists())
 
+
+def _active_venv_python():
+    for candidate in _venv_candidates():
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _ensure_virtualenv():
+    """Create a local virtualenv and install requirements when needed."""
     requirements_path = Path(__file__).with_name("requirements.txt")
     if not requirements_path.exists():
         return
 
-    print("Flask not detected at runtime, installing dependencies with --user...")
-    subprocess.check_call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--user",
-            "--disable-pip-version-check",
-            "-r",
-            str(requirements_path),
-        ]
-    )
+    active_python = _active_venv_python()
+    if active_python is not None:
+        try:
+            subprocess.check_call(
+                [
+                    str(active_python),
+                    "-c",
+                    "import flask",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            return
+        except Exception:
+            pass
 
-    _bootstrap_paths()
+    base_dir = Path(__file__).resolve().parent
+    runtime_venv_dir = base_dir / ".runtime_venv"
+    runtime_venv_python = runtime_venv_dir / "bin" / "python"
+
+    if not runtime_venv_python.exists():
+        print("Creating runtime virtualenv...")
+        subprocess.check_call([sys.executable, "-m", "venv", str(runtime_venv_dir)])
+
+    print("Installing runtime dependencies into virtualenv...")
+    subprocess.check_call([str(runtime_venv_python), "-m", "pip", "install", "--upgrade", "pip"])
+    subprocess.check_call([str(runtime_venv_python), "-m", "pip", "install", "-r", str(requirements_path)])
+
+    os.execv(str(runtime_venv_python), [str(runtime_venv_python), str(Path(__file__).resolve()), *sys.argv[1:]])
+
+
+def _maybe_switch_to_existing_venv():
+    """Switch to an already-created virtualenv when possible."""
+    if _current_python_is_venv_python():
+        return
+
+    active_python = _active_venv_python()
+    if active_python is None:
+        return
+
+    print(f"Switching to virtualenv Python: {active_python}")
+    os.execv(str(active_python), [str(active_python), str(Path(__file__).resolve()), *sys.argv[1:]])
 
 
 def demarrer_application():
@@ -58,7 +94,8 @@ def demarrer_application():
     print("=" * 50)
 
     try:
-        _install_missing_dependencies()
+        _maybe_switch_to_existing_venv()
+        _ensure_virtualenv()
         from fifa1 import app
     except Exception as e:
         print(f"Unable to load application: {e}")

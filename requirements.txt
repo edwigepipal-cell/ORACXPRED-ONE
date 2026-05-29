@@ -6,3 +6,4 @@ schedule==1.2.0
 Werkzeug==2.3.7
 curl_cffi==0.15.0
 psycopg2-binary==2.9.9
+gunicorn==22.0.0

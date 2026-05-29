@@ -14,7 +14,7 @@ except ImportError:
     browser_requests = None
     CURL_CFFI_DISPONIBLE = False
 
-# Import du système quantique simplifié (compatible Render)
+# Import du système quantique simplifié
 try:
     from systeme_prediction_quantique import SystemePredictionQuantique
     QUANTIQUE_DISPONIBLE = True
@@ -23,7 +23,7 @@ except ImportError:
     try:
         from systeme_prediction_simple import SystemePredictionQuantique
         QUANTIQUE_DISPONIBLE = True
-        print("✅ Système quantique simplifié chargé (compatible Render)")
+        print("✅ Système quantique simplifié chargé")
     except ImportError:
         QUANTIQUE_DISPONIBLE = False
         print("⚠️ Aucun système quantique disponible")
@@ -53,7 +53,7 @@ except ImportError:
     BOTS_ALTERNATIFS_DISPONIBLES = False
     print("⚠️ Bots alternatifs non disponibles")
 
-# Import optionnel de numpy (désactivé pour Render)
+# Import optionnel de numpy (désactivé)
 NUMPY_DISPONIBLE = False
 # Simulation des fonctions NumPy avec Python standard
 import math
@@ -7671,7 +7671,7 @@ def api_collecte_stats():
 
 
 if __name__ == "__main__":
-    # Configuration pour Render
+    # Configuration du port du serveur
     port = int(os.environ.get("PORT", 10000))
     host = os.environ.get("HOST", "0.0.0.0")
 

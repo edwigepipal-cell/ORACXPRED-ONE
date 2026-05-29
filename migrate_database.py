@@ -25,7 +25,7 @@ def migrate_database():
         if db_uri.startswith("sqlite:///"):
             db_path = db_uri.replace("sqlite:///", "")
             if not os.path.isabs(db_path):
-                # Pour Render, utiliser instance_path
+                # Utiliser instance_path si le chemin est relatif
                 if not os.path.exists(app.instance_path):
                     os.makedirs(app.instance_path, exist_ok=True)
                 db_path = os.path.join(app.instance_path, db_path)

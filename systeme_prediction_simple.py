@@ -10,7 +10,7 @@ import math
 from datetime import datetime
 
 class SystemePredictionQuantique:
-    """🚀 SYSTÈME DE PRÉDICTION SIMPLIFIÉ (Compatible Render)"""
+    """🚀 SYSTÈME DE PRÉDICTION SIMPLIFIÉ"""
     
     def __init__(self):
         self.version = "SIMPLE-RENDER-2024"

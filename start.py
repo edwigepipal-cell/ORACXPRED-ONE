@@ -4,36 +4,61 @@ Simple startup script for Render.
 """
 
 import os
+import site
+import subprocess
 import sys
 import traceback
 from pathlib import Path
 
 
-def _reexec_into_virtualenv():
-    """Run the app inside the build-time virtualenv when available."""
+def _bootstrap_paths():
+    """Ensure the project and user site-packages are importable."""
     base_dir = Path(__file__).resolve().parent
-    venv_python = base_dir / ".venv" / "bin" / "python"
+    sys.path.insert(0, str(base_dir))
 
-    if not venv_python.exists():
+    user_site = site.getusersitepackages()
+    if user_site and user_site not in sys.path:
+        site.addsitedir(user_site)
+
+
+def _install_missing_dependencies():
+    """Install requirements into the user site when the runtime misses Flask."""
+    try:
+        import flask  # noqa: F401
+        return
+    except Exception:
+        pass
+
+    requirements_path = Path(__file__).with_name("requirements.txt")
+    if not requirements_path.exists():
         return
 
-    current_python = Path(sys.executable).resolve()
-    if current_python == venv_python.resolve():
-        return
+    print("Flask not detected at runtime, installing dependencies with --user...")
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--user",
+            "--disable-pip-version-check",
+            "-r",
+            str(requirements_path),
+        ]
+    )
 
-    print(f"Switching to virtualenv Python: {venv_python}")
-    os.execv(str(venv_python), [str(venv_python), str(base_dir / "start.py"), *sys.argv[1:]])
+    _bootstrap_paths()
 
 
 def demarrer_application():
     """Start the Flask application."""
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    _bootstrap_paths()
 
     print("Starting application bootstrap")
     print("=" * 50)
 
     try:
-        _reexec_into_virtualenv()
+        _install_missing_dependencies()
         from fifa1 import app
     except Exception as e:
         print(f"Unable to load application: {e}")

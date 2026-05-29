@@ -4,37 +4,25 @@ Simple startup script for Render.
 """
 
 import os
-import subprocess
 import sys
 import traceback
 from pathlib import Path
 
 
-def _ensure_dependencies():
-    """Install project dependencies if the runtime cannot import Flask yet."""
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+def _reexec_into_virtualenv():
+    """Run the app inside the build-time virtualenv when available."""
+    base_dir = Path(__file__).resolve().parent
+    venv_python = base_dir / ".venv" / "bin" / "python"
 
-    try:
-        import flask  # noqa: F401
-        return
-    except Exception:
-        pass
-
-    requirements_path = Path(__file__).with_name("requirements.txt")
-    if not requirements_path.exists():
+    if not venv_python.exists():
         return
 
-    print("Flask not detected at runtime, installing dependencies...")
-    subprocess.check_call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "-r",
-            str(requirements_path),
-        ]
-    )
+    current_python = Path(sys.executable).resolve()
+    if current_python == venv_python.resolve():
+        return
+
+    print(f"Switching to virtualenv Python: {venv_python}")
+    os.execv(str(venv_python), [str(venv_python), str(base_dir / "start.py"), *sys.argv[1:]])
 
 
 def demarrer_application():
@@ -45,7 +33,7 @@ def demarrer_application():
     print("=" * 50)
 
     try:
-        _ensure_dependencies()
+        _reexec_into_virtualenv()
         from fifa1 import app
     except Exception as e:
         print(f"Unable to load application: {e}")

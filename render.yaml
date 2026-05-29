@@ -2,8 +2,8 @@ services:
   - type: web
     name: fifa-prediction-system
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn fifa1:app --bind 0.0.0.0:$PORT
+    buildCommand: python3 -m venv .venv && .venv/bin/python -m pip install --upgrade pip && .venv/bin/python -m pip install -r requirements.txt
+    startCommand: .venv/bin/python start.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0

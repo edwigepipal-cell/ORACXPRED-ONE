@@ -1,1 +1,1 @@
-web: gunicorn fifa1:app --bind 0.0.0.0:$PORT
+web: .venv/bin/python start.py

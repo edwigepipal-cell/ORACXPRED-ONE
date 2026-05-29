@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+instance/
+oracxpred.db
+.env
+.venv/
+venv/
+env/
+*.sqlite3
+*.db-journal
